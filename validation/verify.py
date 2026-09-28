@@ -78,7 +78,21 @@ assert source.read_bytes() == fixed
 counts, failed = test("restored-focused", focused)
 assert counts == [expected_new, 0, 0, 0]
 run("test-lint", [python, "-m", "ruff", "check", "--select", "F,E501", "--line-length", "80", meta["test"]])
-run("source-lint", [python, "-m", "ruff", "check", "--select", "E9,F63,F7,F82", meta["source"]])
+# A pre-existing previous_max diagnostic is outside the changed constructor.
+# Require an exact baseline match instead of suppressing that rule.
+source_lint_command = [python, "-m", "ruff", "check", "--select", "E9,F63,F7,F82",
+                       "--output-format=json", meta["source"]]
+fixed_lint = json.loads(run("source-lint", source_lint_command, expected=1))
+try:
+    source.write_bytes(original)
+    baseline_lint = json.loads(run("baseline-source-lint", source_lint_command,
+                                  expected=1))
+finally:
+    source.write_bytes(fixed)
+assert fixed_lint == baseline_lint
+assert [(d["code"], d["location"]["row"]) for d in fixed_lint] == [("F821", 1450)]
+summary["source_lint"] = {"baseline_diagnostics": fixed_lint, "new_diagnostics": []}
+
 run("source-restoration", ["git", "diff", "--exit-code"])
 run("patch-check", ["git", "diff", "--check", meta["base"]])
 run("package-build", [python, "-m", "build", "--outdir", str(evidence / "dist")])
