@@ -41,8 +41,10 @@ def _one_bin_error(threshold):
 
 class ThresholdedAdaptiveCalibrationErrorTest(parameterized.TestCase):
 
-  @parameterized.product(threshold=[0., .01, .1, .5, .99, 1.], registry=[False, True])
-  def test_one_bin_result_matches_filtered_class_means(self, threshold, registry):
+  @parameterized.product(
+      threshold=[0., .01, .1, .5, .99, 1.], registry=[False, True])
+  def test_one_bin_result_matches_filtered_class_means(
+      self, threshold, registry):
     if registry:
       metric = rm.metrics.get(f'tace(num_bins=1,threshold={threshold})')
     else:
