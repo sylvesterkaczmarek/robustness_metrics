@@ -1,0 +1,45 @@
+name: Exact-source regression validation
+on:
+  push:
+    branches:
+      - 'validation/tace-threshold-20260928'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.11']
+    env:
+      TF_CPP_MIN_LOG_LEVEL: '2'
+      CUDA_VISIBLE_DEVICES: ''
+      TF_NUM_INTRAOP_THREADS: '2'
+      TF_NUM_INTEROP_THREADS: '2'
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      TFDS_DISABLE_GCS: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: sylvesterkaczmarek/robustness_metrics
+          ref: 'c4ea6e78a8d174ba99930b05827e3b786d306dea'
+          path: work
+          fetch-depth: 0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install isolated validation dependencies
+        run: python -m pip install -e ./work pytest==9.1.1 pytest-cov==7.1.0 build ruff tensorflow==2.15.1 tensorflow-probability==0.23.0 tensorflow-hub==0.15.0 tensorflow-datasets==4.9.3 tensorflow-metadata==1.14.0 numpy==1.26.4 scipy==1.15.3 pandas==2.2.3 scikit-learn==1.6.1 clu==0.0.9 jax==0.4.23 jaxlib==0.4.23 flax==0.8.2
+      - name: Validate source, baseline controls and installed package
+        run: python validation/verify.py work evidence
+      - name: Preserve verification evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: evidence-${{ matrix.python }}
+          path: evidence
+          retention-days: 14
