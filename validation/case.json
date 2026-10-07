@@ -19,7 +19,7 @@
     0,
     8
   ],
-  "head": "af2594e0c85fcf79f17c688d088d8499461d64ec",
+  "head": "fb2d5d4a0035e25add2d885943ea4a18832da677",
   "branch": "fix/tace-threshold-20260928",
   "title": "Forward the configured TACE threshold",
   "test_file": "robustness_metrics/metrics/uncertainty_test.py",
