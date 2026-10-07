@@ -1,7 +1,7 @@
 {
   "repo": "google-research/robustness_metrics",
   "base_branch": "master",
-  "base": "c41b8f3dd7a34f03df3a5991ee39a19a02e17a2a",
+  "base": "fb88e1ab77259ca0e72730c417328c66352d9c23",
   "source": "robustness_metrics/metrics/uncertainty.py",
   "test": "robustness_metrics/metrics/uncertainty_test.py::ThresholdedAdaptiveCalibrationErrorTest",
   "issue": 99,
@@ -19,7 +19,7 @@
     0,
     8
   ],
-  "head": "fb2d5d4a0035e25add2d885943ea4a18832da677",
+  "head": "be41782d1823c961b8242c79d0fe527a769dc34e",
   "branch": "fix/tace-threshold-20260928",
   "title": "Forward the configured TACE threshold",
   "test_file": "robustness_metrics/metrics/uncertainty_test.py",

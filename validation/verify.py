@@ -127,7 +127,7 @@ try:
 finally:
     source.write_bytes(fixed)
 assert fixed_lint == baseline_lint
-assert [(d["code"], d["location"]["row"]) for d in fixed_lint] == [("F821", 1450)]
+assert [(d["code"], d["location"]["row"]) for d in fixed_lint] == [("F821", 1451)]
 summary["source_lint"] = {"baseline_diagnostics": fixed_lint, "new_diagnostics": []}
 
 run("source-restoration", ["git", "diff", "--exit-code"])

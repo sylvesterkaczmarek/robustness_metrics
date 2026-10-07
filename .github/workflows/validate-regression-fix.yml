@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: sylvesterkaczmarek/robustness_metrics
-          ref: 'fb2d5d4a0035e25add2d885943ea4a18832da677'
+          ref: 'be41782d1823c961b8242c79d0fe527a769dc34e'
           path: work
           fetch-depth: 0
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
