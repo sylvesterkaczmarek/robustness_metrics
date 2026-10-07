@@ -3,11 +3,11 @@
   "base_branch": "master",
   "base": "c41b8f3dd7a34f03df3a5991ee39a19a02e17a2a",
   "source": "robustness_metrics/metrics/uncertainty.py",
-  "test": "robustness_metrics/metrics/tace_test.py",
+  "test": "robustness_metrics/metrics/uncertainty_test.py::ThresholdedAdaptiveCalibrationErrorTest",
   "issue": 99,
   "issue_url": "https://github.com/google-research/robustness_metrics/issues/99",
   "selection": [
-    "robustness_metrics/metrics/tace_test.py",
+    "robustness_metrics/metrics/uncertainty_test.py::ThresholdedAdaptiveCalibrationErrorTest",
     "robustness_metrics/metrics/uncertainty_test.py::GeneralCalibrationErrorTest",
     "robustness_metrics/metrics/uncertainty_test.py::GetAdaptiveBinsTest",
     "robustness_metrics/metrics/base_test.py",
@@ -19,7 +19,9 @@
     0,
     8
   ],
-  "head": "c4ea6e78a8d174ba99930b05827e3b786d306dea",
+  "head": "af2594e0c85fcf79f17c688d088d8499461d64ec",
   "branch": "fix/tace-threshold-20260928",
-  "title": "Forward the configured TACE threshold"
+  "title": "Forward the configured TACE threshold",
+  "test_file": "robustness_metrics/metrics/uncertainty_test.py",
+  "focused": "robustness_metrics/metrics/uncertainty_test.py::ThresholdedAdaptiveCalibrationErrorTest"
 }

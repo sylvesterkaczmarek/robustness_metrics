@@ -26,7 +26,8 @@ def run(label, command, expected=0, cwd=work, timeout=480):
                               stdout=log, stderr=subprocess.STDOUT, timeout=timeout)
     text = (evidence / (label + ".log")).read_text(errors="replace")
     print(label, "exit", proc.returncode, text[-450:], flush=True)
-    assert proc.returncode == expected, (label, proc.returncode, text[-8000:])
+    if expected is not None:
+        assert proc.returncode == expected, (label, proc.returncode, text[-8000:])
     return text
 
 
@@ -53,11 +54,17 @@ assert subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=work, text=True
 print("TESTED SOURCE", meta["head"], flush=True)
 run("dependencies", [python, "-m", "pip", "freeze"])
 run("dependency-check", [python, "-m", "pip", "check"])
-focused = [meta["test"]]
-full = ["robustness_metrics/metrics/uncertainty_test.py", meta["test"]] if is_rm else ["mt_metrics_eval"]
+test_file = meta.get("test_file", meta["test"].split("::", 1)[0])
+focused_node = meta.get("focused", meta["test"])
+focused = [focused_node]
+full = [test_file] if is_rm else ["mt_metrics_eval"]
 expected_new = 23 if is_rm else 19
 expected_original_failures = 17 if is_rm else 12
 original = subprocess.check_output(["git", "show", meta["base"] + ":" + meta["source"]], cwd=work)
+original_test = (subprocess.check_output(["git", "show", meta["base"] + ":" + test_file], cwd=work)
+                 if is_rm else None)
+test_path = work / test_file
+fixed_test = test_path.read_bytes() if is_rm else None
 try:
     counts, failed = test("fixed-focused", focused)
     assert counts == [expected_new, 0, 0, 0]
@@ -67,17 +74,47 @@ try:
     source.write_bytes(original)
     counts, failed = test("original-focused", focused, expected=1)
     assert counts == [expected_new, expected_original_failures, 0, 0]
-    baseline_files = [full[0]] if is_rm else full + ["--ignore=" + meta["test"]]
-    baseline_counts, baseline_failures = test("baseline-broader", baseline_files, expected=1)
+    if is_rm:
+        test_path.write_bytes(original_test)
+        try:
+            baseline_counts, baseline_failures = test("baseline-broader", [test_file], expected=1)
+        finally:
+            test_path.write_bytes(fixed_test)
+    else:
+        baseline_counts, baseline_failures = test(
+            "baseline-broader", full + ["--ignore=" + meta["test"]], expected=1)
     assert fixed_failures == baseline_failures
     assert fixed_counts[1:] == baseline_counts[1:]
     assert fixed_counts[0] == baseline_counts[0] + expected_new
 finally:
     source.write_bytes(fixed)
+    if is_rm and fixed_test is not None:
+        test_path.write_bytes(fixed_test)
 assert source.read_bytes() == fixed
 counts, failed = test("restored-focused", focused)
 assert counts == [expected_new, 0, 0, 0]
-run("test-lint", [python, "-m", "ruff", "check", "--select", "F,E501", "--line-length", "80", meta["test"]])
+if is_rm:
+    from collections import Counter
+    test_lint_command = [python, "-m", "ruff", "check", "--select", "F,E501",
+                         "--line-length", "80", "--output-format=json", test_file]
+    fixed_test_lint = json.loads(run("test-lint", test_lint_command, expected=None))
+    test_path.write_bytes(original_test)
+    try:
+        baseline_test_lint = json.loads(
+            run("baseline-test-lint", test_lint_command, expected=None))
+    finally:
+        test_path.write_bytes(fixed_test)
+    signature = lambda d: (d["code"], d["message"])
+    assert Counter(map(signature, fixed_test_lint)) == Counter(
+        map(signature, baseline_test_lint))
+    summary["test_lint"] = {
+        "baseline_diagnostics": baseline_test_lint,
+        "current_diagnostics": fixed_test_lint,
+        "new_diagnostics": [],
+    }
+else:
+    run("test-lint", [python, "-m", "ruff", "check", "--select", "F,E501",
+                      "--line-length", "80", meta["test"]])
 # A pre-existing previous_max diagnostic is outside the changed constructor.
 # Require an exact baseline match instead of suppressing that rule.
 source_lint_command = [python, "-m", "ruff", "check", "--select", "E9,F63,F7,F82",
@@ -100,12 +137,14 @@ wheel, = (evidence / "dist").glob("*.whl")
 run("install-wheel", [python, "-m", "pip", "install", "--force-reinstall", "--no-deps", str(wheel)])
 with tempfile.TemporaryDirectory() as directory:
     outside = Path(directory)
-    copied = outside / Path(meta["test"]).name
-    shutil.copyfile(work / meta["test"], copied)
+    copied = outside / Path(test_file).name
+    shutil.copyfile(work / test_file, copied)
     module = "robustness_metrics" if is_rm else "mt_metrics_eval"
     code = f"import {module}; from pathlib import Path; p=Path({module}.__file__).resolve(); print(p); assert not p.is_relative_to(Path({str(work)!r}))"
     run("installed-import", [python, "-c", code], cwd=outside)
-    counts, failed = test("installed-focused", [str(copied)], cwd=outside)
+    suffix = focused_node.split("::", 1)[1] if "::" in focused_node else ""
+    installed_target = str(copied) + ("::" + suffix if suffix else "")
+    counts, failed = test("installed-focused", [installed_target], cwd=outside)
     assert counts == [expected_new, 0, 0, 0]
 (evidence / "summary.json").write_text(json.dumps(summary, indent=2))
 print("VALIDATION COMPLETE", meta["head"], flush=True)
